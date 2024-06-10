@@ -1,0 +1,42 @@
+version: '3.1'
+services:
+  web:
+    container_name: ${WEB_HOST}
+    image: ${WEB_IMAGE_NAME}:${WEB_IMAGE_TAG}
+    depends_on:
+      - db
+    ports:
+      - "${WEB_PORT}:8070"
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./config:/etc/odoo
+      - ./addons:/mnt/extra-addons
+      - ./addons-customize:/mnt/extra-addons-customize
+    environment:
+      - HOST=db
+      - USER=${DB_USER}
+      - PASSWORD_FILE=/run/secrets/postgresql_password
+    entrypoint: "/usr/bin/odoo -c /etc/odoo/odoo.conf"
+    restart: always
+  db:
+    container_name: ${DB_HOST}
+    image: ${DB_IMAGE}:${DB_TAG}
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgresql_password
+      - POSTGRES_USER=${DB_USER}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "${DB_PORT}:5435"
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data/pgdata
+    secrets:
+      - postgresql_password
+    restart: always
+
+volumes:
+  odoo-db-data:
+  odoo-web-data:
+secrets:
+  postgresql_password:
+    file: odoo_pg_pass
